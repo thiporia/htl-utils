@@ -2,16 +2,23 @@ import { escape as escapeHtml } from "he";
 import parse from "html-react-parser";
 import React from "react";
 
+function decodeWindowsEscaped(val: string): string {
+  return val
+    .replace(/\\"/g, '"') // \" → "
+    .replace(/\\r\\n|\\n|\\r/g, "\n") // \\r\\n 또는 \\n 등 → 실제 개행 문자
+    .replace(/\r?\n/g, "<br />"); // 실제 개행 → <br />
+}
+
 function safeString(val: any): string {
   if (val === null || val === undefined) return "";
   if (typeof val === "object") return JSON.stringify(val);
-  return String(val);
+  return decodeWindowsEscaped(String(val));
 }
 
 export const contextHandlers: Record<string, (val: any) => any> = {
   text: (val: string) => escapeHtml(safeString(val)),
   html: (val: string): React.ReactNode => {
-    const content = safeString(val).replace(/\r?\n/g, "<br />");
+    const content = safeString(val).replace(/\\r?\\n/g, "<br />");
     return <>{parse(content)}</>;
   },
   attribute: (val: string) =>
